@@ -1,4 +1,13 @@
 import SwiftUI
+import FirebaseCore
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        FirebaseApp.configure()
+        return true
+    }
+}
 
 struct HomeView: View {
     @Environment(\.presentationMode) var presentationMode
@@ -7,20 +16,33 @@ struct HomeView: View {
     @State private var selectedDuration: Int = 5
     @State private var timerRemaining: Double = 5 * 60
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    @State private var isRunning = false
+    @State private var isRunning: Bool = false
+    @State private var isCompleted: Bool = false
+    @State private var showProfile: Bool = false
     
     var body: some View {
         VStack(spacing: 20) {
             HStack {
                 Text("Home")
-                    .font(.system(size: 36, weight: .semibold))
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
                 Spacer()
+                Button(action: {
+                    showProfile.toggle()
+                }) {
+                    Image(systemName: "person.crop.circle")
+                        .font(.largeTitle)
+                }
+                .fullScreenCover(isPresented: $showProfile) {
+                    ProfileView(showProfile: $showProfile)
+                }
             }
             .padding(.bottom)
             
             VStack(spacing: 10) {
                 Text("Choose a duration")
-                    .font(.system(size: 36))
+                    .font(.title2)
+                    .fontWeight(.medium)
                 
                 Picker("duration", selection: $selectedDuration) {
                     ForEach(timerDuration, id: \.self) { timer in
@@ -45,10 +67,17 @@ struct HomeView: View {
                 .onReceive(timer) { _ in
                     if isRunning && timerRemaining > 0 {
                         timerRemaining -= 1
+                    } else if timerRemaining == 0 {
+                        isRunning = false
+                        isCompleted = true
+                        timerRemaining = Double(selectedDuration * 60)
                     }
                 }
+            
             ProgressView(value: timerRemaining, total: Double(selectedDuration * 60))
-              
+                .progressViewStyle(LinearProgressViewStyle())
+                .padding()
+            
             Spacer()
             
             VStack(spacing: 20) {
@@ -61,6 +90,7 @@ struct HomeView: View {
                             .frame(height: 60)
                             .background(Color.green)
                             .cornerRadius(10)
+                            .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 5)
                     }
                     
                     Button(action: { isRunning = false }) {
@@ -71,6 +101,7 @@ struct HomeView: View {
                             .frame(height: 60)
                             .background(Color.red)
                             .cornerRadius(10)
+                            .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 5)
                     }
                 }
                 
@@ -85,19 +116,17 @@ struct HomeView: View {
                         .frame(height: 60)
                         .background(Color.blue)
                         .cornerRadius(10)
+                        .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 5)
                 }
-            }
-            
-            Spacer()
-            
-            Button(action: {
-                presentationMode.wrappedValue.dismiss()
-            }) {
-                Text("Sign Out")
-                    .foregroundColor(.red)
             }
         }
         .padding()
+        .background(Color(UIColor.systemBackground))
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+        .fullScreenCover(isPresented: $isCompleted) {
+            ResultView(isCompleted: $isCompleted)
+        }
     }
 }
 

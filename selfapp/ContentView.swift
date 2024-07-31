@@ -1,4 +1,6 @@
 import SwiftUI
+import FirebaseCore
+import FirebaseAuth
 
 struct ContentView: View {
     @State private var email: String = ""
@@ -29,18 +31,7 @@ struct ContentView: View {
                         .stroke(Color.black, lineWidth: 1)
                 )
             
-            Button(action: {
-                if email.isEmpty {
-                    errorMessage = "Please enter an email"
-                    showError = true
-                } else if password.isEmpty {
-                    errorMessage = "Please enter an password"
-                    showError = true
-                } else {
-                    showError = false
-                    isSignedIn = true
-                }
-            }) {
+            Button(action: signIn) {
                 Text("Sign in")
                     .font(.system(size: 24, weight: .semibold))
                     .foregroundColor(.white)
@@ -49,15 +40,58 @@ struct ContentView: View {
                     .cornerRadius(10)
             }
             .shadow(color: .gray, radius: 4, x: 3, y: 3)
+            
             if showError {
-                          Text(errorMessage)
-                              .foregroundColor(.red)
-                              .padding()
-                      }
+                Text(errorMessage)
+                    .foregroundColor(.red)
+                    .padding()
+            }
+            
+            Button(action: signUp) {
+                Text("Sign up")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.blue)
+            }
         }
         .padding()
         .fullScreenCover(isPresented: $isSignedIn) {
             HomeView()
+        }
+    }
+    
+    private func signIn() {
+        if email.isEmpty || password.isEmpty {
+            errorMessage = "Please enter both email and password"
+            showError = true
+            return
+        }
+        
+        Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
+            if let error = error {
+                errorMessage = error.localizedDescription
+                showError = true
+            } else {
+                isSignedIn = true
+                showError = false
+            }
+        }
+    }
+    
+    private func signUp() {
+        if email.isEmpty || password.isEmpty {
+            errorMessage = "Please enter both email and password"
+            showError = true
+            return
+        }
+        
+        Auth.auth().createUser(withEmail: email, password: password) { authResult, error in
+            if let error = error {
+                errorMessage = error.localizedDescription
+                showError = true
+            } else {
+                isSignedIn = true
+                showError = false
+            }
         }
     }
 }
